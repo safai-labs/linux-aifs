@@ -14636,6 +14636,15 @@ F:	include/linux/workqueue.h
 F:	kernel/workqueue.c
 F:	Documentation/core-api/workqueue.rst
 
+WRAP FILE SYSTEM
+M:	Erez Zadok <ezk@cs.sunysb.edu>
+L:	wrapfs@filesystems.org
+W:	http://wrapfs.filesystems.org/
+T:	git git://git.fsl.cs.sunysb.edu/wrapfs-latest.git
+S:	Maintained
+F:	Documentation/filesystems/wrapfs.txt
+F:	fs/wrapfs/
+
 X-POWERS MULTIFUNCTION PMIC DEVICE DRIVERS
 M:	Chen-Yu Tsai <wens@csie.org>
 L:	linux-kernel@vger.kernel.org
