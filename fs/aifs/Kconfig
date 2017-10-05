@@ -1,0 +1,6 @@
+config SAFAI_FS
+	tristate "saf.ai AiFS, a self-healing self-defending filesystems (EXPERIMENTAL)"
+	help
+	  saf.ai is a stackable file system which provides data resilience
+	  and data security layers on top of existing file systems stored in lower layer.
+	  (See Documentation/safai-aifs.txt and https://saf.ai/ for details)
