@@ -11,9 +11,10 @@
 
 #include "aifs.h"
 
-static int aifs_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+static int aifs_fault(struct vm_fault *vmf)
 {
 	int err;
+	struct vm_area_struct *vma = vmf->vma;
 	struct file *file, *lower_file;
 	const struct vm_operations_struct *lower_vm_ops;
 	struct vm_area_struct lower_vma;
@@ -35,13 +36,13 @@ static int aifs_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	 * take an explicit file pointer.
 	 */
 	lower_vma.vm_file = lower_file;
-	err = lower_vm_ops->fault(&lower_vma, vmf);
+	err = lower_vm_ops->fault(vmf);
 	return err;
 }
 
-static int aifs_page_mkwrite(struct vm_area_struct *vma,
-			       struct vm_fault *vmf)
+static int aifs_page_mkwrite(struct vm_fault *vmf)
 {
+	struct vm_area_struct *vma = vmf->vma;
 	int err = 0;
 	struct file *file, *lower_file;
 	const struct vm_operations_struct *lower_vm_ops;
@@ -67,7 +68,7 @@ static int aifs_page_mkwrite(struct vm_area_struct *vma,
 	 * ->page_mkwrite to take an explicit file pointer.
 	 */
 	lower_vma.vm_file = lower_file;
-	err = lower_vm_ops->page_mkwrite(&lower_vma, vmf);
+	err = lower_vm_ops->page_mkwrite(vmf);
 out:
 	return err;
 }

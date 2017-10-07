@@ -155,13 +155,22 @@ static void aifs_umount_begin(struct super_block *sb)
 		lower_sb->s_op->umount_begin(lower_sb);
 }
 
+int aifs_show_options(struct seq_file *m, struct dentry *root)
+{
+	struct path lower_path;
+	// struct vfsmount *lower_mount;
+	aifs_get_lower_path(root, &lower_path);
+	seq_show_option(m, "lower", lower_path.dentry->d_name.name);
+	return 0;
+}
+
 const struct super_operations aifs_sops = {
 	.put_super	= aifs_put_super,
 	.statfs		= aifs_statfs,
 	.remount_fs	= aifs_remount_fs,
 	.evict_inode	= aifs_evict_inode,
 	.umount_begin	= aifs_umount_begin,
-	.show_options	= generic_show_options,
+	.show_options	= aifs_show_options,
 	.alloc_inode	= aifs_alloc_inode,
 	.destroy_inode	= aifs_destroy_inode,
 	.drop_inode	= generic_delete_inode,

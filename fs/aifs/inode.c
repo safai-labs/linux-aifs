@@ -435,15 +435,15 @@ out_err:
 	return err;
 }
 
-static int aifs_getattr(struct vfsmount *mnt, struct dentry *dentry,
-			  struct kstat *stat)
+static int aifs_getattr(const struct path *path, struct kstat *stat, u32 mode, unsigned int flags)
 {
 	int err;
 	struct kstat lower_stat;
 	struct path lower_path;
+	struct dentry *dentry = path->dentry;
 
 	aifs_get_lower_path(dentry, &lower_path);
-	err = vfs_getattr(&lower_path, &lower_stat);
+	err = vfs_getattr(&lower_path, &lower_stat, mode, flags);
 	if (err)
 		goto out;
 	fsstack_copy_attr_all(d_inode(dentry),
