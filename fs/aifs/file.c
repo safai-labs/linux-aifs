@@ -9,7 +9,26 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/uio.h>
 #include "aifs.h"
+
+#if CONFIG_AIFS_LEGACY_READ
+static ssize_t new_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos)
+{
+	struct iovec iov = { .iov_base = buf, .iov_len = len };
+	struct kiocb kiocb;
+	struct iov_iter iter;
+	ssize_t ret;
+
+	init_sync_kiocb(&kiocb, filp);
+	kiocb.ki_pos = *ppos;
+	iov_iter_init(&iter, READ, &iov, 1, len);
+
+	ret = call_read_iter(filp, &kiocb, &iter);
+	BUG_ON(ret == -EIOCBQUEUED);
+	*ppos = kiocb.ki_pos;
+	return ret;
+}
 
 static ssize_t aifs_read(struct file *file, char __user *buf,
 			   size_t count, loff_t *ppos)
@@ -20,7 +39,13 @@ static ssize_t aifs_read(struct file *file, char __user *buf,
 
 	lower_file = aifs_lower_file(file);
 	// err = vfs_read(lower_file, buf, count, ppos);
-	err = kernel_read(lower_file, buf, count, ppos);
+	if (lower_file->f_op->read) 
+		err = kernel_read(lower_file, buf, count, ppos);
+	else if(lower_file->f_op->read_iter) 
+		err = new_sync_read(file, buf, count, ppos); // call readitr on myself
+	else
+		return -EINVAL;
+
 	/* update our inode atime upon a successful lower read */
 	if (err >= 0)
 		fsstack_copy_attr_atime(d_inode(dentry),
@@ -28,11 +53,13 @@ static ssize_t aifs_read(struct file *file, char __user *buf,
 
 	return err;
 }
+#endif
 
 static ssize_t aifs_write(struct file *file, const char __user *buf,
 			    size_t count, loff_t *ppos)
 {
 	int err;
+
 
 	struct file *lower_file;
 	struct dentry *dentry = file->f_path.dentry;
@@ -350,7 +377,9 @@ out:
 
 const struct file_operations aifs_main_fops = {
 	.llseek		= generic_file_llseek,
+#if CONFIG_AIFS_LEGACY_READ
 	.read		= aifs_read,
+#endif
 	.write		= aifs_write,
 	.unlocked_ioctl	= aifs_unlocked_ioctl,
 #ifdef CONFIG_COMPAT

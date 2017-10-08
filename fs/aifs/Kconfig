@@ -4,3 +4,9 @@ config AIFS
 	  saf.ai is a stackable file system which provides data resilience
 	  and data security layers on top of existing file systems stored in lower layer.
 	  (See Documentation/safai-aifs.txt and https://saf.ai/ for details)
+
+ config AIFS_LEGACY_READ
+	bool "Compile legacy read function (DANGEROUS)"
+	help
+	   leave this disabled unless you really know what you're doing
+        depends on AIFS
