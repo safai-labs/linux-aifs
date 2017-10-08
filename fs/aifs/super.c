@@ -157,10 +157,17 @@ static void aifs_umount_begin(struct super_block *sb)
 
 int aifs_show_options(struct seq_file *m, struct dentry *root)
 {
-	struct path lower_path;
-	// struct vfsmount *lower_mount;
-	aifs_get_lower_path(root, &lower_path);
-	seq_show_option(m, "lower", lower_path.dentry->d_name.name);
+#if 0
+	struct super_block *lower_sb;
+	char *buf;
+	lower_sb = aifs_lower_super(root->d_sb);
+	buf = (char *)__get_free_page(GFP_ATOMIC);
+	if(buf) {
+		char * path = dentry_path_raw(lower_sb->s_root, buf, PAGE_SIZE);
+		seq_show_option(m, "lower", path);
+		free_page((unsigned long)buf);
+	}
+#endif
 	return 0;
 }
 
