@@ -96,7 +96,7 @@ static int aifs_read_super(struct super_block *sb, void *raw_data, int silent)
 	d_rehash(sb->s_root);
 	if (!silent)
 		printk(KERN_INFO
-		       "aifs: mounted on top of %s type %s\n",
+		       "AiFS: mounted on top of %s type %s\n",
 		       dev_name, lower_sb->s_type->name);
 	goto out; /* all is well */
 
@@ -139,7 +139,7 @@ static int __init init_aifs_fs(void)
 {
 	int err;
 
-	pr_info("Registering aifs " AIFS_VERSION "\n");
+	pr_info("Registering AiFS: saf.ai (aifs " AIFS_VERSION ")\n");
 
 	err = aifs_init_inode_cache();
 	if (err)
