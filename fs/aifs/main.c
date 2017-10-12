@@ -27,6 +27,7 @@ static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 {
 	int err = 0;
 	struct super_block *lower_sb;
+        struct ovl_fs * ofs;
 	struct path lower_path;
 	char *dev_name = (char *) raw_data;
 	struct inode *inode;
@@ -64,7 +65,12 @@ static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 		goto out_sput;
 	}
 
+	ofs = lower_sb->s_fs_info;
+	pr_info("AiFS [mounted on overlayfs with upper=%s, lower=%s, workdir=%s]",
+			ofs->config.upperdir, ofs->config.lowerdir, ofs->config.workdir);
+
 	aifs_set_lower_super(sb, lower_sb);
+	aifs_get_workdir(lower_sb);
 
 	/* inherit maxbytes from lower file system */
 	sb->s_maxbytes = lower_sb->s_maxbytes;
