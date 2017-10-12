@@ -14,6 +14,15 @@
  * way anyone can have a reference to the superblock at this point in time.
  */
 
+static int aifs_unsupported_lower(struct super_block *lower_sb)
+{
+	if(strcmp(lower_sb->s_type->name, "overlay" )) {
+		pr_err("AiFS only works with overlayfs as the lower file-system\n");
+		return -1;
+	}
+	return 0;
+}
+
 static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 {
 	int err = 0;
@@ -49,6 +58,12 @@ static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 	/* set the lower superblock field of upper superblock */
 	lower_sb = lower_path.dentry->d_sb;
 	atomic_inc(&lower_sb->s_active);
+
+	if(aifs_unsupported_lower(lower_sb)) {
+		err = -EIO;
+		goto out_sput;
+	}
+
 	aifs_set_lower_super(sb, lower_sb);
 
 	/* inherit maxbytes from lower file system */
