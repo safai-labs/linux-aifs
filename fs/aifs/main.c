@@ -13,7 +13,8 @@
  * There is no need to lock the aifs_super_info's rwsem as there is no
  * way anyone can have a reference to the superblock at this point in time.
  */
-static int aifs_read_super(struct super_block *sb, void *raw_data, int silent)
+
+static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 {
 	int err = 0;
 	struct super_block *lower_sb;
@@ -123,7 +124,7 @@ struct dentry *aifs_mount(struct file_system_type *fs_type, int flags,
 	void *lower_path_name = (void *) dev_name;
 
 	return mount_nodev(fs_type, flags, lower_path_name,
-			   aifs_read_super);
+			   aifs_fill_super);
 }
 
 static struct file_system_type aifs_fs_type = {
