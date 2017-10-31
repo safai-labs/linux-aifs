@@ -29,7 +29,7 @@ static void aifs_put_super(struct super_block *sb)
 
 	/* decrement lower super references */
 	s = aifs_lower_super(sb);
-	aifs_set_lower_super(sb, NULL);
+	aifs_reset_super(sb); /* not sure if this is needed ? */
 	atomic_dec(&s->s_active);
 
 	kfree(spd);

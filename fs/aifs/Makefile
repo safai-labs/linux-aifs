@@ -10,4 +10,4 @@ endif
 
 obj-$(CONFIG_AIFS) += aifs.o
 
-aifs-y := dentry.o file.o inode.o main.o super.o lookup.o mmap.o ovl_util.o
+aifs-y := dir.o dentry.o file.o inode.o main.o super.o lookup.o mmap.o ovl_util.o

@@ -27,6 +27,9 @@
 #include <linux/sched.h>
 #include <linux/xattr.h>
 #include <linux/exportfs.h>
+#include "ovl_entry.h"
+#include "overlayfs.h"
+#include "dir.h"
 
 /* the file system name */
 #define AIFS_NAME "aifs"
@@ -63,6 +66,9 @@ extern struct inode *aifs_iget(struct super_block *sb,
 extern int aifs_interpose(struct dentry *dentry, struct super_block *sb,
 			    struct path *lower_path);
 
+/* super block functions */
+
+
 /* file private data */
 struct aifs_file_info {
 	struct file *lower_file;
@@ -82,9 +88,19 @@ struct aifs_dentry_info {
 };
 
 /* aifs super-block data in memory */
+#define AIFS_WORK_BASEDIR_NAME "._aifs"
+#define AIFS_WORK_DATADIR_NAME "data"
+#define AIFS_WORK_METADIR_NAME "meta"
+
 struct aifs_sb_info {
 	struct super_block *lower_sb;
+	struct _aifs_work {
+		struct dentry *basedir;
+		struct dentry *datadir;
+		struct dentry *metadir;
+	} work;
 };
+
 
 /*
  * inode to private data
@@ -106,6 +122,7 @@ static inline struct aifs_inode_info *AIFS_I(const struct inode *inode)
 
 /* file to private Data */
 #define AIFS_F(file) ((struct aifs_file_info *)((file)->private_data))
+
 
 /* file to lower file */
 static inline struct file *aifs_lower_file(const struct file *f)
@@ -136,11 +153,6 @@ static inline struct super_block *aifs_lower_super(
 	return AIFS_SB(sb)->lower_sb;
 }
 
-static inline void aifs_set_lower_super(struct super_block *sb,
-					  struct super_block *val)
-{
-	AIFS_SB(sb)->lower_sb = val;
-}
 
 /* path based (dentry/mnt) macros */
 static inline void pathcpy(struct path *dst, const struct path *src)
@@ -192,6 +204,12 @@ static inline void aifs_put_reset_lower_path(const struct dentry *dent)
 	return;
 }
 
+static inline void aifs_reset_super(const struct super_block *sb) 
+{
+	struct aifs_sb_info *aifs = AIFS_SB(sb);
+	memset(aifs, 0, sizeof(*aifs));
+}
+
 /* locking helpers */
 static inline struct dentry *lock_parent(struct dentry *dentry)
 {
@@ -205,4 +223,11 @@ static inline void unlock_dir(struct dentry *dir)
 	inode_unlock(d_inode(dir));
 	dput(dir);
 }
+
+
+static inline struct ovl_fs * aifs_ovl_fs(struct aifs_sb_info *aifs)
+{
+	return (struct ovl_fs *)(aifs->lower_sb->s_fs_info);
+}
+
 #endif	/* not _AIFS_H_ */
