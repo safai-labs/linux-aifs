@@ -95,6 +95,7 @@ struct aifs_dentry_info {
 struct aifs_sb_info {
 	struct super_block *lower_sb;
 	struct _aifs_work {
+		struct path    parent;
 		struct dentry *basedir;
 		struct dentry *datadir;
 		struct dentry *metadir;

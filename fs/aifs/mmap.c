@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 1998-2017 Erez Zadok
- * Copyright (c) 2009	   Shrikar Archak
- * Copyright (c) 2003-2017 Stony Brook University
- * Copyright (c) 2003-2017 The Research Foundation of SUNY
+ * Copyright (c) 2003-2017 Ahmed Masud
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -26,7 +23,7 @@ static int aifs_fault(struct vm_fault *vmf)
 
 	lower_file = aifs_lower_file(file);
 	/*
-	 * XXX: vm_ops->fault may be called in parallel.  Because we have to
+	 * NOTE: vm_ops->fault may be called in parallel.  Because we have to
 	 * resort to temporarily changing the vma->vm_file to point to the
 	 * lower file, a concurrent invocation of aifs_fault could see a
 	 * different value.  In this workaround, we keep a different copy of

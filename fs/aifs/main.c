@@ -21,9 +21,10 @@ static void aifs_cleanup_workdir(struct inode *dir, struct vfsmount *vfs,
  * create working directory
  */
 
-static struct dentry *aifs_create_workdir(struct aifs_sb_info *aifs, const char *name, bool persist)
+static struct dentry *aifs_create_workdir(struct aifs_sb_info *aifs,
+		struct dentry *parent, const char *name, bool persist)
 {
-	struct dentry *dentry = aifs->work.basedir;
+	struct dentry *dentry = parent;
 	struct inode *dir = dentry->d_inode;
 	struct ovl_fs *ofs = aifs_ovl_fs(aifs);
 	struct vfsmount *mnt = ofs->upper_mnt;
@@ -119,16 +120,22 @@ static inline int aifs_set_lower_super(struct super_block *sb,
 		return -EINVAL;
 	}
 
-	err = kern_path(ofs->config.workdir, LOOKUP_FOLLOW, &workpath);
+	err = kern_path(ofs->config.workdir, LOOKUP_DIRECTORY|LOOKUP_PARENT, &workpath);
 	if (err) {
 		pr_err("aifs: found overlayfs with workdir, but it disappeared");
 		return -EIO;
 	}
+	pr_err("aifs-debug: found workpath %s", ofs->config.workdir);
 	err = 0;
 	AIFS_SB(sb)->lower_sb = val;
-	AIFS_SB(sb)->work.basedir = aifs_create_workdir(AIFS_SB(sb), AIFS_WORK_BASEDIR_NAME, true);
-	AIFS_SB(sb)->work.datadir = aifs_create_workdir(AIFS_SB(sb), AIFS_WORK_BASEDIR_NAME "/" AIFS_WORK_DATADIR_NAME, true);
-	AIFS_SB(sb)->work.metadir = aifs_create_workdir(AIFS_SB(sb), AIFS_WORK_BASEDIR_NAME "/" AIFS_WORK_METADIR_NAME, true);
+	AIFS_SB(sb)->work.parent  = workpath;
+
+	AIFS_SB(sb)->work.basedir = aifs_create_workdir(AIFS_SB(sb), 
+			workpath.dentry, AIFS_WORK_BASEDIR_NAME, true);
+	AIFS_SB(sb)->work.datadir = aifs_create_workdir(AIFS_SB(sb), 
+			AIFS_SB(sb)->work.basedir, AIFS_WORK_DATADIR_NAME, true);
+	AIFS_SB(sb)->work.metadir = aifs_create_workdir(AIFS_SB(sb), 
+			AIFS_SB(sb)->work.basedir, AIFS_WORK_METADIR_NAME, true);
 	return err;
 }
 
