@@ -4,7 +4,8 @@
 
 #define ADFS_SUPER_MAGIC	0xadf5
 #define AFFS_SUPER_MAGIC	0xadff
-#define AFS_SUPER_MAGIC                0x5346414F
+#define AFS_SUPER_MAGIC         0x5346414F
+#define AIFS_SUPER_MAGIC	0xA1F50001	/* aifs version 1.0 */
 #define AUTOFS_SUPER_MAGIC	0x0187
 #define CODA_SUPER_MAGIC	0x73757245
 #define CRAMFS_MAGIC		0x28cd3d45	/* some random number */
@@ -54,6 +55,8 @@
 #define REISERFS_SUPER_MAGIC_STRING	"ReIsErFs"
 #define REISER2FS_SUPER_MAGIC_STRING	"ReIsEr2Fs"
 #define REISER2FS_JR_SUPER_MAGIC_STRING	"ReIsEr3Fs"
+
+#define WRAPFS_SUPER_MAGIC	0xb550ca10
 
 #define SMB_SUPER_MAGIC		0x517B
 #define CGROUP_SUPER_MAGIC	0x27e0eb
