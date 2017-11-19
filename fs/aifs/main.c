@@ -125,7 +125,7 @@ static inline int aifs_set_lower_super(struct super_block *sb,
 		pr_err("aifs: found overlayfs with workdir, but it disappeared");
 		return -EIO;
 	}
-	pr_err("aifs-debug: found workpath %s", ofs->config.workdir);
+
 	err = 0;
 	AIFS_SB(sb)->lower_sb = val;
 	AIFS_SB(sb)->work.parent  = workpath;
@@ -141,8 +141,12 @@ static inline int aifs_set_lower_super(struct super_block *sb,
 
 // TODO: 1) Should really look at overlayfs magic number rather than name
 //       2) Add check to ensure that overlayfs has an upper fs
-//       3a) For now ensure that upperfs of overlayfs is actually btrfs
-//       3b) Make sure that upperfs supports reflink
+//       3a) For now ensure that upperfs of overlayfs is one of:
+//        	* xfs		
+//        	* btrfs
+//        	* nilfs  ?
+//       3b) Make sure that upperfs supports either reflink or checkpointing
+//
 static int aifs_unsupported_lower(struct super_block *lower_sb)
 {
 	if (strcmp(lower_sb->s_type->name, "overlay")) {
@@ -217,6 +221,8 @@ static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 	sb->s_op = &aifs_sops;
 	sb->s_xattr = aifs_xattr_handlers;
 
+	/* XXX: this should really only be done for lower fs as NFS, so not really needed 
+	 * but we'll leave it here for now */
 	sb->s_export_op = &aifs_export_ops;	/* adding NFS support */
 
 	/* get a new inode and allocate our root dentry */
