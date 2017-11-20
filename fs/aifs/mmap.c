@@ -16,7 +16,7 @@ static int aifs_fault(struct vm_fault *vmf)
 	const struct vm_operations_struct *lower_vm_ops;
 	struct vm_area_struct lower_vma;
 
-	memcpy(&lower_vma, vma, sizeof(struct vm_area_struct));
+	memcpy(&lower_vma, vma, sizeof(*vma));
 	file = lower_vma.vm_file;
 	lower_vm_ops = AIFS_F(file)->lower_vm_ops;
 	BUG_ON(!lower_vm_ops);

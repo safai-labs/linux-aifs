@@ -213,7 +213,7 @@ static struct dentry *__aifs_lookup(struct dentry *dentry,
 	struct vfsmount *lower_dir_mnt;
 	struct dentry *lower_dir_dentry = NULL;
 	struct dentry *lower_dentry;
-	const char *name;
+	// const char *name;
 	struct path lower_path;
 	struct qstr this;
 	struct dentry *ret_dentry = NULL;
@@ -224,16 +224,17 @@ static struct dentry *__aifs_lookup(struct dentry *dentry,
 	if (IS_ROOT(dentry))
 		goto out;
 
-	name = dentry->d_name.name;
+	// name = dentry->d_name.name;
 
 	/* now start the actual lookup procedure */
 	lower_dir_dentry = lower_parent_path->dentry;
 	lower_dir_mnt = lower_parent_path->mnt;
 
 	/* Use vfs_path_lookup to check if the dentry exists or not */
-	err = vfs_path_lookup(lower_dir_dentry, lower_dir_mnt, name, 0,
-			      &lower_path);
-
+	// err = vfs_path_lookup(lower_dir_dentry, lower_dir_mnt, name, 0, &lower_path);
+	
+	// 0 == lookup 
+	err = kern_path(dentry->d_name.name, 0, &lower_path);
 	/* no error: handle positive dentries */
 	if (!err) {
 		aifs_set_lower_path(dentry, &lower_path);
@@ -255,8 +256,8 @@ static struct dentry *__aifs_lookup(struct dentry *dentry,
 		goto out;
 
 	/* instatiate a new negative dentry */
-	this.name = name;
-	this.len = strlen(name);
+	this.name = dentry->d_name.name;
+	this.len = dentry->d_name.len;
 	this.hash = full_name_hash(lower_dir_dentry, this.name, this.len);
 	lower_dentry = d_lookup(lower_dir_dentry, &this);
 	if (lower_dentry)

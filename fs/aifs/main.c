@@ -94,8 +94,7 @@ static struct dentry *aifs_create_workdir(struct aifs_sb_info *aifs,
 
  out_err:
 	workdir = NULL;
-	pr_err
-	    ("aifs: failed to create management directories %s/%s (errno: %i); refusing to continue\n",
+	pr_err("aifs: failed to create management directories %s/%s (errno: %i); refusing to continue\n",
 	     ofs->config.workdir, name, -err);
 	goto out_unlock;
 }
@@ -167,8 +166,7 @@ static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 	struct inode *inode;
 
 	if (!dev_name) {
-		printk(KERN_ERR
-		       "aifs: read_super: missing dev_name argument\n");
+		pr_err("aifs: read_super: missing dev_name argument");
 		err = -EINVAL;
 		goto out;
 	}
@@ -177,7 +175,7 @@ static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 	err = kern_path(dev_name, LOOKUP_FOLLOW | LOOKUP_DIRECTORY,
 			&lower_path);
 	if (err) {
-		printk(KERN_ERR "aifs: error accessing "
+		pr_err("aifs: error accessing "
 		       "lower directory '%s'\n", dev_name);
 		goto out;
 	}
@@ -185,7 +183,7 @@ static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 	/* allocate superblock private data */
 	sb->s_fs_info = kzalloc(sizeof(struct aifs_sb_info), GFP_KERNEL);
 	if (!AIFS_SB(sb)) {
-		printk(KERN_CRIT "aifs: read_super: out of memory\n");
+		pr_err("aifs: read_super: out of memory\n");
 		err = -ENOMEM;
 		goto out_free;
 	}
@@ -205,10 +203,10 @@ static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 		goto out_sput;
 
 	ofs = lower_sb->s_fs_info;
-	pr_info
-	    ("AiFS [mounted on overlayfs with upper=%s, lower=%s, workdir=%s]",
-	     ofs->config.upperdir, ofs->config.lowerdir, ofs->config.workdir);
-
+	if(!silent)
+		pr_info("AiFS [mounted overlayfs with upper=%s, lower=%s, workdir=%s]",
+	     		ofs->config.upperdir, ofs->config.lowerdir, ofs->config.workdir);
+	
 	/* inherit maxbytes from lower file system */
 	sb->s_maxbytes = lower_sb->s_maxbytes;
 
@@ -255,10 +253,8 @@ static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 	 * d_rehash it.
 	 */
 	d_rehash(sb->s_root);
-	if (!silent)
-		printk(KERN_INFO
-		       "AiFS: mounted on top of %s type %s\n",
-		       dev_name, lower_sb->s_type->name);
+	pr_info("aifs mounted %s(%s) at %s", dev_name, lower_sb->s_type->name,
+			sb->s_root->d_name.name);
 	goto out;		/* all is well */
 
 	/* no longer needed: free_dentry_private_data(sb->s_root); */
