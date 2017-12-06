@@ -324,10 +324,10 @@ struct dentry *aifs_lookup(struct inode *dir, struct dentry *dentry,
 		dentry = ret;
 	if (d_inode(dentry))
 		fsstack_copy_attr_times(d_inode(dentry),
-					aifs_lower_inode(d_inode(dentry)));
+			aifs_lower_inode(d_inode(dentry)));
 	/* update parent directory's atime */
 	fsstack_copy_attr_atime(d_inode(parent),
-				aifs_lower_inode(d_inode(parent)));
+		aifs_lower_inode(d_inode(parent)));
 
 out:
 	aifs_put_lower_path(parent, &lower_parent_path);

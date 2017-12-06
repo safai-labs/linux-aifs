@@ -295,6 +295,7 @@ static int aifs_readlink(struct dentry *dentry, char __user *buf, int bufsiz)
 	int err;
 	struct dentry *lower_dentry;
 	struct path lower_path;
+	// struct delayed_call done;
 
 	aifs_get_lower_path(dentry, &lower_path);
 	lower_dentry = lower_path.dentry;
@@ -302,6 +303,9 @@ static int aifs_readlink(struct dentry *dentry, char __user *buf, int bufsiz)
 	    !d_inode(lower_dentry)->i_op->readlink) {
 		err = -EINVAL;
 		goto out;
+	}
+
+	if(d_inode(lower_dentry)->i_op->get_link) {
 	}
 
 	err = d_inode(lower_dentry)->i_op->readlink(lower_dentry,
@@ -312,19 +316,23 @@ static int aifs_readlink(struct dentry *dentry, char __user *buf, int bufsiz)
 
 out:
 	aifs_put_lower_path(dentry, &lower_path);
+	// done();
 	return err;
 }
 
 static const char *aifs_get_link(struct dentry *dentry, struct inode *inode,
 				   struct delayed_call *done)
 {
-	char *buf;
+	const char *buf;
 	int len = PAGE_SIZE, err;
-	mm_segment_t old_fs;
+	mm_segment_t old_fs __maybe_unused;
+	struct path lower_path;
+	struct dentry *lower_dentry;
 
 	if (!dentry)
 		return ERR_PTR(-ECHILD);
 
+#if 0
 	/* This is freed by the put_link method assuming a successful call. */
 	buf = kmalloc(len, GFP_KERNEL);
 	if (!buf) {
@@ -337,6 +345,13 @@ static const char *aifs_get_link(struct dentry *dentry, struct inode *inode,
 	set_fs(KERNEL_DS);
 	err = aifs_readlink(dentry, buf, len);
 	set_fs(old_fs);
+#endif
+	
+	aifs_get_lower_path(dentry, &lower_path);
+	lower_dentry = lower_path.dentry;
+
+	buf = vfs_get_link(lower_dentry, done);
+#if 0
 	if (err < 0) {
 		kfree(buf);
 		buf = ERR_PTR(err);
@@ -344,6 +359,7 @@ static const char *aifs_get_link(struct dentry *dentry, struct inode *inode,
 		buf[err] = '\0';
 	}
 	set_delayed_call(done, kfree_link, buf);
+#endif
 	return buf;
 }
 
@@ -443,9 +459,9 @@ static int aifs_getattr(const struct path *path, struct kstat *stat, u32 mode, u
 	struct dentry *dentry = path->dentry;
 
 	aifs_get_lower_path(dentry, &lower_path);
-	pr_debug("aifs-debug: about to call vfs_getattr\n");
+	pr_info("aifs-debug: about to call vfs_getattr\n");
 	err = vfs_getattr(&lower_path, &lower_stat, mode, flags);
-	pr_debug("aifs-debug: returned %d from vfs_getattr\n", err);
+	pr_info("aifs-debug: returned %d from vfs_getattr\n", err);
 	if (err)
 		goto out;
 	fsstack_copy_attr_all(d_inode(dentry),
@@ -496,11 +512,9 @@ aifs_getxattr(struct dentry *dentry, struct inode *inode,
 		err = -EOPNOTSUPP;
 		goto out;
 	}
-	pr_err("pre getxattr\n");
 	err = vfs_getxattr(lower_dentry, name, buffer, size);
 	if (err)
 		goto out;
-	pr_err("post getxattr\n");
 	fsstack_copy_attr_atime(d_inode(dentry),
 				d_inode(lower_path.dentry));
 out:
@@ -556,8 +570,7 @@ out:
 }
 
 const struct inode_operations aifs_symlink_iops = {
-	.readlink	= aifs_readlink,
-	.permission	= aifs_permission,
+	//.permission	= aifs_permission,
 	.setattr	= aifs_setattr,
 	.getattr	= aifs_getattr,
 	.get_link	= aifs_get_link,

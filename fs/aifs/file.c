@@ -358,8 +358,8 @@ const struct file_operations aifs_main_fops = {
 	.llseek		= generic_file_llseek,
 #if CONFIG_AIFS_LEGACY_READ
 	.read		= aifs_read,
-#endif
 	.write		= aifs_write,
+#endif
 	.unlocked_ioctl	= aifs_unlocked_ioctl,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl	= aifs_compat_ioctl,
