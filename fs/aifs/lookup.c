@@ -11,6 +11,9 @@
  */
 
 #include "aifs.h"
+/* TODO: this needs to be replaced up by lookup_one */
+extern int vfs_path_lookup(struct dentry *, struct vfsmount *,
+	const char *, unsigned int, struct path *);
 
 /* The dentry cache is just so we have properly sized dentries */
 static struct kmem_cache *aifs_dentry_cachep;
@@ -205,15 +208,19 @@ int aifs_interpose(struct dentry *dentry, struct super_block *sb,
  * Returns: NULL (ok), ERR_PTR if an error occurred.
  * Fills in lower_parent_path with <dentry,mnt> on success.
  */
+
+
+//
+// THIS REQUIRES MAJOR CLEANUP and REWRITE 
+//
 static struct dentry *__aifs_lookup(struct dentry *dentry,
 				      unsigned int flags,
 				      struct path *lower_parent_path)
 {
 	int err = 0;
-	struct vfsmount *lower_dir_mnt;
+	struct vfsmount *lower_dir_mnt = NULL;
 	struct dentry *lower_dir_dentry = NULL;
 	struct dentry *lower_dentry;
-	// const char *name;
 	struct path lower_path;
 	struct qstr this;
 	struct dentry *ret_dentry = NULL;
@@ -231,12 +238,16 @@ static struct dentry *__aifs_lookup(struct dentry *dentry,
 	lower_dir_mnt = lower_parent_path->mnt;
 
 	/* Use vfs_path_lookup to check if the dentry exists or not */
-	// err = vfs_path_lookup(lower_dir_dentry, lower_dir_mnt, name, 0, &lower_path);
+	err = vfs_path_lookup(lower_dir_dentry, lower_dir_mnt, dentry->d_name.name, 0, &lower_path);
 	
-	// 0 == lookup 
-	err = kern_path(dentry->d_name.name, 0, &lower_path);
+#if 0
+	lower_dentry = lookup_one_len_unlocked(dentry->d_name.name, lower_parent_path->dentry, strlen(dentry->d_name.name));
+	err = PTR_ERR(lower_dentry);
+#endif
 	/* no error: handle positive dentries */
 	if (!err) {
+		// lower_path.dentry = lower_dentry;
+		// lower_path.mnt = mntget(lower_parent_path->mnt);
 		aifs_set_lower_path(dentry, &lower_path);
 		ret_dentry =
 			__aifs_interpose(dentry, dentry->d_sb, &lower_path);
@@ -272,7 +283,7 @@ static struct dentry *__aifs_lookup(struct dentry *dentry,
 
 setup_lower:
 	lower_path.dentry = lower_dentry;
-	lower_path.mnt = mntget(lower_dir_mnt);
+	lower_path.mnt = mntget(lower_dir_mnt); /* may be crashing here? */
 	aifs_set_lower_path(dentry, &lower_path);
 
 	/*

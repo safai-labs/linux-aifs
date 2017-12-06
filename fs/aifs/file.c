@@ -9,7 +9,6 @@
  * published by the Free Software Foundation.
  */
 
-#include <linux/uio.h>
 #include "aifs.h"
 
 #if CONFIG_AIFS_LEGACY_READ
@@ -153,6 +152,10 @@ out:
 	return err;
 }
 
+#if defined(AIFS_DEBUG)
+static char __tmp[4096];
+#endif
+
 static int aifs_open(struct inode *inode, struct file *file)
 {
 	int err = 0;
@@ -161,12 +164,13 @@ static int aifs_open(struct inode *inode, struct file *file)
 
 	/* don't open unhashed/deleted files */
 	if (d_unhashed(file->f_path.dentry)) {
+		pr_err("aifs unhased dentry, returning -ENOENT for %p\n", file->f_path.dentry);
 		err = -ENOENT;
 		goto out_err;
 	}
 
-	file->private_data =
-		kzalloc(sizeof(struct aifs_file_info), GFP_KERNEL);
+	pr_info("aifs, private data: %p\n", file->private_data);
+	file->private_data = kzalloc(sizeof(struct aifs_file_info), GFP_KERNEL);
 	if (!AIFS_F(file)) {
 		err = -ENOMEM;
 		goto out_err;
@@ -174,10 +178,16 @@ static int aifs_open(struct inode *inode, struct file *file)
 
 	/* open lower object and link aifs's file struct to lower's */
 	aifs_get_lower_path(file->f_path.dentry, &lower_path);
-	lower_file = dentry_open(&lower_path, file->f_flags, current_cred());
+#if defined(AIFS_DEBUG)
+	dentry_path_raw(lower_path.dentry, __tmp, sizeof(__tmp));
+	pr_info("aifs, getting lower path dentry: %s\n", __tmp);
+#endif
+	lower_file = dentry_open(&lower_path, file->f_flags | O_NOATIME, current_cred());
+	// lower_file = d_real(lower_path.dentry, NULL, file->f_flags | O_NOATIME, 0);
 	path_put(&lower_path);
 	if (IS_ERR(lower_file)) {
 		err = PTR_ERR(lower_file);
+		pr_err("lower_file dentry_open error: %d\n", err);
 		lower_file = aifs_lower_file(file);
 		if (lower_file) {
 			aifs_set_lower_file(file, NULL);
@@ -185,10 +195,18 @@ static int aifs_open(struct inode *inode, struct file *file)
 		}
 	} else {
 		aifs_set_lower_file(file, lower_file);
+#if defined(AIFS_DEBUG)
+		dentry_path_raw(lower_file->f_path.dentry,
+			AIFS_F(file)->fullpath, sizeof(AIFS_F(file)->fullpath));
+		pr_info("aifs: lower file dentry [%s] [err: %d]\n",
+				AIFS_F(file)->fullpath, err);
+#endif
 	}
 
-	if (err)
+	if (err) {
+		pr_err("some error occured: %d\n", err);
 		kfree(AIFS_F(file));
+	}
 	else
 		fsstack_copy_attr_all(inode, aifs_lower_inode(inode));
 out_err:
@@ -359,7 +377,6 @@ const struct file_operations aifs_main_fops = {
 /* trimmed directory options */
 const struct file_operations aifs_dir_fops = {
 	.llseek		= aifs_file_llseek,
-	// .read		= generic_read_dir,
 	.iterate	= aifs_readdir,
 	.unlocked_ioctl	= aifs_unlocked_ioctl,
 #ifdef CONFIG_COMPAT

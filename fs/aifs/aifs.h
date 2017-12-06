@@ -27,6 +27,7 @@
 #include <linux/sched.h>
 #include <linux/xattr.h>
 #include <linux/exportfs.h>
+#include <linux/uio.h>
 #include "ovl_entry.h"
 #include "overlayfs.h"
 #include "dir.h"
@@ -73,6 +74,9 @@ extern int aifs_interpose(struct dentry *dentry, struct super_block *sb,
 struct aifs_file_info {
 	struct file *lower_file;
 	const struct vm_operations_struct *lower_vm_ops;
+#if defined(AIFS_DEBUG)
+	char fullpath[256]; /* XXX: remove this later */
+#endif
 };
 
 /* aifs inode data in memory */
@@ -124,6 +128,12 @@ static inline struct aifs_inode_info *AIFS_I(const struct inode *inode)
 /* file to private Data */
 #define AIFS_F(file) ((struct aifs_file_info *)((file)->private_data))
 
+/* dentry to lower dentry */
+
+static inline struct dentry *aifs_lower_dentry(const struct dentry *dentry)
+{
+	return AIFS_D(dentry)->lower_path.dentry;
+}
 
 /* file to lower file */
 static inline struct file *aifs_lower_file(const struct file *f)
@@ -230,5 +240,6 @@ static inline struct ovl_fs * aifs_ovl_fs(struct aifs_sb_info *aifs)
 {
 	return (struct ovl_fs *)(aifs->lower_sb->s_fs_info);
 }
+
 
 #endif	/* not _AIFS_H_ */

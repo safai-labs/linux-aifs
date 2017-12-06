@@ -11,17 +11,17 @@
 #include <linux/fs.h>
 
 /* right now no clean up is performed */
-static void aifs_cleanup_workdir(struct inode *dir, struct vfsmount *vfs,
+static void ovl_cleanup_workdir(struct inode *dir, struct vfsmount *vfs,
 		struct dentry *dentry, int level)
 {
 	return;
 }
 
 /* 
- * create working directory
+ * create overlayfs working directory
  */
 
-static struct dentry *aifs_create_workdir(struct aifs_sb_info *aifs,
+static struct dentry *ovl_create_workdir(struct aifs_sb_info *aifs,
 		struct dentry *parent, const char *name, bool persist)
 {
 	struct dentry *dentry = parent;
@@ -55,7 +55,7 @@ static struct dentry *aifs_create_workdir(struct aifs_sb_info *aifs,
 				goto out_unlock;
 
 			retried = true;
-			aifs_cleanup_workdir(dir, mnt, workdir, 0);
+			ovl_cleanup_workdir(dir, mnt, workdir, 0);
 			dput(workdir);
 			goto retry;
 		}
@@ -99,13 +99,22 @@ static struct dentry *aifs_create_workdir(struct aifs_sb_info *aifs,
 	goto out_unlock;
 }
 
-/*
- * There is no need to lock the aifs_super_info's rwsem as there is no
- * way anyone can have a reference to the superblock at this point in time.
- */
+static bool unsupported_lower(struct super_block *lower_sb)
+{
+	if (IS_ENABLED(CONFIG_AIFS_OVER_OVERLAYFS))  {
+		if(strcmp(lower_sb->s_type->name, "overlay")) {
+			pr_err
+		    	("AiFS only works with overlayfs as the lower file-system\n");
+			return true;
+		}
+	}
+	return false;
+}
 
-static inline int aifs_set_lower_super(struct super_block *sb,
-				       struct super_block *val)
+
+
+static int set_lower_overlayfs(struct super_block *sb,
+		struct super_block *val, int silent)
 {
 	struct path workpath = { };
 	int err = -EIO;
@@ -115,26 +124,29 @@ static inline int aifs_set_lower_super(struct super_block *sb,
 	}
 	ofs = val->s_fs_info;
 	if (!ofs->config.workdir)  {
-		pr_err("aifs: read-only overlayfs not supported");
+		pr_err("aifs: read-only overlayfs not supported\n");
 		return -EINVAL;
 	}
 
 	err = kern_path(ofs->config.workdir, LOOKUP_DIRECTORY|LOOKUP_PARENT, &workpath);
 	if (err) {
-		pr_err("aifs: found overlayfs with workdir, but it disappeared");
+		pr_err("aifs: found overlayfs with workdir, but it disappeared\n");
 		return -EIO;
 	}
 
 	err = 0;
-	AIFS_SB(sb)->lower_sb = val;
 	AIFS_SB(sb)->work.parent  = workpath;
 
-	AIFS_SB(sb)->work.basedir = aifs_create_workdir(AIFS_SB(sb), 
-			workpath.dentry, AIFS_WORK_BASEDIR_NAME, true);
-	AIFS_SB(sb)->work.datadir = aifs_create_workdir(AIFS_SB(sb), 
-			AIFS_SB(sb)->work.basedir, AIFS_WORK_DATADIR_NAME, true);
-	AIFS_SB(sb)->work.metadir = aifs_create_workdir(AIFS_SB(sb), 
-			AIFS_SB(sb)->work.basedir, AIFS_WORK_METADIR_NAME, true);
+	AIFS_SB(sb)->work.basedir = ovl_create_workdir(AIFS_SB(sb), 
+		workpath.dentry, AIFS_WORK_BASEDIR_NAME, true);
+	AIFS_SB(sb)->work.datadir = ovl_create_workdir(AIFS_SB(sb), 
+		AIFS_SB(sb)->work.basedir, AIFS_WORK_DATADIR_NAME, true);
+	AIFS_SB(sb)->work.metadir = ovl_create_workdir(AIFS_SB(sb), 
+		AIFS_SB(sb)->work.basedir, AIFS_WORK_METADIR_NAME, true);
+
+	if(!silent)
+		pr_info("AiFS [attached overlayfs with upper=%s, lower=%s, workdir=%s]\n",
+	     		ofs->config.upperdir, ofs->config.lowerdir, ofs->config.workdir);
 	return err;
 }
 
@@ -146,27 +158,39 @@ static inline int aifs_set_lower_super(struct super_block *sb,
 //        	* nilfs  ?
 //       3b) Make sure that upperfs supports either reflink or checkpointing
 //
-static int aifs_unsupported_lower(struct super_block *lower_sb)
+
+
+static inline int set_lower_realfs(struct super_block *sb,
+       struct super_block *val, int silent)
 {
-	if (strcmp(lower_sb->s_type->name, "overlay")) {
-		pr_err
-		    ("AiFS only works with overlayfs as the lower file-system\n");
-		return -1;
-	}
-	return 0;
+	int err = 0;
+	AIFS_SB(sb)->lower_sb = val;
+	pr_info("aifs: lower fstype is %s\n", val->s_type->name);
+	return err;
 }
 
+static inline int set_lower_super(
+	struct super_block *sb,
+	struct super_block *val, int silent
+)
+{
+	if(IS_ENABLED(CONFIG_AIFS_OVER_OVERLAYFS)) 
+		return set_lower_overlayfs(sb, val, silent);
+	else 
+		return set_lower_realfs(sb, val, silent);
+}
+
+static char __tmp[4096] = "";
 static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 {
 	int err = 0;
 	struct super_block *lower_sb;
-	struct ovl_fs *ofs;
 	struct path lower_path;
 	char *dev_name = (char *)raw_data;
 	struct inode *inode;
 
 	if (!dev_name) {
-		pr_err("aifs: read_super: missing dev_name argument");
+		pr_err("aifs: read_super: missing dev_name argument\n");
 		err = -EINVAL;
 		goto out;
 	}
@@ -192,20 +216,19 @@ static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 	lower_sb = lower_path.dentry->d_sb;
 	atomic_inc(&lower_sb->s_active);
 
-	if (aifs_unsupported_lower(lower_sb)) {
+	if (unsupported_lower(lower_sb)) {
 		err = -EIO;
+		pr_err("aifs: unsupported lower fs\n");
 		goto out_sput;
 	}
 
 
-	err = aifs_set_lower_super(sb, lower_sb);
-	if(err) 
+	err = set_lower_super(sb, lower_sb, silent);
+	if(err) {
+		pr_err("aifs: error setting lower superblock\n");
 		goto out_sput;
+	}
 
-	ofs = lower_sb->s_fs_info;
-	if(!silent)
-		pr_info("AiFS [mounted overlayfs with upper=%s, lower=%s, workdir=%s]",
-	     		ofs->config.upperdir, ofs->config.lowerdir, ofs->config.workdir);
 	
 	/* inherit maxbytes from lower file system */
 	sb->s_maxbytes = lower_sb->s_maxbytes;
@@ -253,8 +276,9 @@ static int aifs_fill_super(struct super_block *sb, void *raw_data, int silent)
 	 * d_rehash it.
 	 */
 	d_rehash(sb->s_root);
-	pr_info("aifs mounted %s(%s) at %s", dev_name, lower_sb->s_type->name,
-			sb->s_root->d_name.name);
+	dentry_path_raw(sb->s_root, __tmp, sizeof(__tmp));
+	pr_info("aifs mounted %s(%s) at %s\n", dev_name, lower_sb->s_type->name,
+			__tmp);
 	goto out;		/* all is well */
 
 	/* no longer needed: free_dentry_private_data(sb->s_root); */

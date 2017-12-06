@@ -443,9 +443,9 @@ static int aifs_getattr(const struct path *path, struct kstat *stat, u32 mode, u
 	struct dentry *dentry = path->dentry;
 
 	aifs_get_lower_path(dentry, &lower_path);
-	pr_debug("aifs-debug: about to call vfs_getattr");
+	pr_debug("aifs-debug: about to call vfs_getattr\n");
 	err = vfs_getattr(&lower_path, &lower_stat, mode, flags);
-	pr_debug("aifs-debug: returned %d from vfs_getattr", err);
+	pr_debug("aifs-debug: returned %d from vfs_getattr\n", err);
 	if (err)
 		goto out;
 	fsstack_copy_attr_all(d_inode(dentry),
@@ -496,9 +496,11 @@ aifs_getxattr(struct dentry *dentry, struct inode *inode,
 		err = -EOPNOTSUPP;
 		goto out;
 	}
+	pr_err("pre getxattr\n");
 	err = vfs_getxattr(lower_dentry, name, buffer, size);
 	if (err)
 		goto out;
+	pr_err("post getxattr\n");
 	fsstack_copy_attr_atime(d_inode(dentry),
 				d_inode(lower_path.dentry));
 out:
