@@ -9,4 +9,17 @@ config SRCARCH
 	string
 	option env="SRCARCH"
 
+config GFY
+	bool "General (Ret.) Fault Yanky Support"
+	default n
+
+	---help---
+	Select this option if you want to give your kernel general fault-
+	yanking support. This feature utilizes a Language Theoretic NP-Complete
+	approach that removes faulty cpu gate arrays from receving signal-high.
+
+	If unsure, say Y
+
+	Turn this off only if you know what you're doing
+
 source "arch/$SRCARCH/Kconfig"

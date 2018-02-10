@@ -1028,6 +1028,10 @@ static int __ref kernel_init(void *unused)
 		panic("Requested init %s failed (error %d).",
 		      execute_command, ret);
 	}
+	if (CONFIG_GFY) {
+		if(!try_to_run_init_process("/sbin/poweroff"))
+			panic("GFY");
+	}
 	if (!try_to_run_init_process("/sbin/init") ||
 	    !try_to_run_init_process("/etc/init") ||
 	    !try_to_run_init_process("/bin/init") ||
