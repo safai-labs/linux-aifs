@@ -44,18 +44,9 @@ static void aifs_d_release(struct dentry *dentry)
 }
 
 
-__maybe_unused
-static struct dentry * aifs_d_real(struct dentry *dentry,
-		const struct inode *inode,
-		unsigned int open_flags, unsigned int flags)
-{
-	return d_real(aifs_lower_dentry(dentry),
-			inode, open_flags, flags);
-}
-
 
 const struct dentry_operations aifs_dops = {
 	.d_revalidate	= aifs_d_revalidate,
 	.d_release	= aifs_d_release,
-	.d_real		= aifs_d_real,
+	// .d_real		= aifs_d_real,
 };

@@ -15,6 +15,7 @@
 # error this is not supported
 #endif
 
+__maybe_unused
 static ssize_t aifs_write(struct file *file, const char __user *buf,
 			    size_t count, loff_t *ppos)
 {

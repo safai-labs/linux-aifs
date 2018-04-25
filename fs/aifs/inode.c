@@ -459,16 +459,17 @@ static int aifs_getattr(const struct path *path, struct kstat *stat, u32 mode, u
 	struct dentry *dentry = path->dentry;
 
 	aifs_get_lower_path(dentry, &lower_path);
-	pr_info("aifs-debug: about to call vfs_getattr\n");
+
 	err = vfs_getattr(&lower_path, &lower_stat, mode, flags);
-	pr_info("aifs-debug: returned %d from vfs_getattr\n", err);
-	if (err)
-		goto out;
-	fsstack_copy_attr_all(d_inode(dentry),
+	if (!err) {
+		fsstack_copy_attr_all(d_inode(dentry),
 			      d_inode(lower_path.dentry));
-	generic_fillattr(d_inode(dentry), stat);
-	stat->blocks = lower_stat.blocks;
-out:
+		generic_fillattr(d_inode(dentry), stat);
+		stat->blksize = lower_stat.blksize;
+		stat->blocks = lower_stat.blocks;
+		stat->size = lower_stat.size;
+		pr_info("block size: %u, blocks: %llu\n", stat->blksize, stat->blocks);
+	}
 	aifs_put_lower_path(dentry, &lower_path);
 	return err;
 }
@@ -506,8 +507,8 @@ aifs_getxattr(struct dentry *dentry, struct inode *inode,
 	struct path lower_path;
 
 	aifs_get_lower_path(dentry, &lower_path);
-	lower_dentry = lower_path.dentry;
 	lower_inode = aifs_lower_inode(inode);
+	lower_dentry = d_real(lower_path.dentry, NULL, 0, 0); //  do we need to loop here?
 	if (!(d_inode(lower_dentry)->i_opflags & IOP_XATTR)) {
 		err = -EOPNOTSUPP;
 		goto out;

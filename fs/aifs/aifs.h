@@ -235,6 +235,15 @@ static inline void unlock_dir(struct dentry *dir)
 	dput(dir);
 }
 
+__maybe_unused
+static inline struct dentry * aifs_d_real(struct dentry *dentry,
+		const struct inode *inode,
+		unsigned int open_flags, unsigned int flags)
+{
+	// pr_info("aifs: calling d_real on the lower dentry\n");
+	return d_real(aifs_lower_dentry(dentry), inode, open_flags, flags);
+}
+
 
 static inline struct ovl_fs * aifs_ovl_fs(struct aifs_sb_info *aifs)
 {

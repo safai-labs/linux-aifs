@@ -1,5 +1,5 @@
 comment "AiFS support disabled, (needs OVERLAY_FS && (XFS_FS || BTRFS_FS))"
-	depends on !(OVERLAY_FS && (XFS_FS || BTRFS_FS))
+	depends on (OVERLAY_FS=n || (XFS_FS=n && BTRFS_FS=n))
 
 config AIFS 
 	tristate "AiFS, a self-healing self-defending filesystems (EXPERIMENTAL)"
