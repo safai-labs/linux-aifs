@@ -468,7 +468,7 @@ static int aifs_getattr(const struct path *path, struct kstat *stat, u32 mode, u
 		stat->blksize = lower_stat.blksize;
 		stat->blocks = lower_stat.blocks;
 		stat->size = lower_stat.size;
-		pr_info("block size: %u, blocks: %llu\n", stat->blksize, stat->blocks);
+		// pr_info("block size: %u, blocks: %llu\n", stat->blksize, stat->blocks);
 	}
 	aifs_put_lower_path(dentry, &lower_path);
 	return err;
