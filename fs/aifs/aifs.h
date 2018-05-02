@@ -28,7 +28,6 @@
 #include <linux/xattr.h>
 #include <linux/exportfs.h>
 #include <linux/uio.h>
-#include "ovl_entry.h"
 #include "overlayfs.h"
 #include "dir.h"
 
