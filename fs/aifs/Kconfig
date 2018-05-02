@@ -5,6 +5,9 @@ config AIFS_FS
 	  and data security layers on top of existing file systems stored in lower layer.
 	  (See Documentation/safai-aifs.txt and https://saf.ai/ for details)
 	  You must either compile XFS or BTRFS as upper file system
+	select OVERLAY_FS
+	select XFS_FS
+	select BTRFS_FS
 
 config AIFS_DEEP_METRICS
 	bool "Enable AIFS deep metrics"
