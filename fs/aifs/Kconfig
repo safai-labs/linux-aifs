@@ -5,23 +5,22 @@ config AIFS_FS
 	  and data security layers on top of existing file systems stored in lower layer.
 	  (See Documentation/safai-aifs.txt and https://saf.ai/ for details)
 	  You must either compile XFS or BTRFS as upper file system
-	depends on (OVERLAY_FS && (XFS_FS || BTRFS_FS))
 
-	config AIFS_DEEP_METRICS
-		bool "Enable AIFS deep metrics"
-		help 
-		  enable deep metrics in saf.ai
-		depends on AIFS
+config AIFS_DEEP_METRICS
+	bool "Enable AIFS deep metrics"
+	help 
+	  enable deep metrics in saf.ai
+	depends on AIFS_FS
 
-	config AIFS_DEBUG
-		bool "Compile debugging code"
-		help
-  			Enable kernel-level debugging code in saf.ai (aifs).
-       			Really only needed if you are developing aifs 
-		depends on AIFS
+config AIFS_DEBUG
+	bool "Compile debugging code"
+	help
+  		Enable kernel-level debugging code in saf.ai (aifs).
+       		Really only needed if you are developing aifs 
+	depends on AIFS_FS
 
 config AIFS_LEGACY_READ
 	bool "Compile legacy read function (DANGEROUS)"
 	help
 	   leave this disabled unless you really know what you're doing
-        depends on AIFS
+        depends on AIFS_FS
