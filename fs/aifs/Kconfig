@@ -1,7 +1,7 @@
 comment "AiFS support disabled, (needs OVERLAY_FS && (XFS_FS || BTRFS_FS))"
 	depends on (OVERLAY_FS=n || (XFS_FS=n && BTRFS_FS=n))
 
-config AIFS 
+config AIFS_FS
 	tristate "AiFS, a self-healing self-defending filesystems (EXPERIMENTAL)"
 	help
 	  saf.ai is a stackable file system which provides data resilience

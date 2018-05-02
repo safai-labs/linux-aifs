@@ -12,8 +12,8 @@ ifeq ($(CONFIG_AIFS_DEBUG),y)
 endif
 
 
-obj-$(CONFIG_AIFS) += aifs.o
-extra-$(CONFIG_AIFS) += $(BUILD_NUMBER_FILE)
+obj-$(CONFIG_AIFS_FS) += aifs.o
+extra-$(CONFIG_AIFS_FS) += $(BUILD_NUMBER_FILE)
 
 aifs-y := dir.o dentry.o file.o inode.o main.o super.o lookup.o mmap.o ovl_util.o
 
